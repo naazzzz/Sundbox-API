@@ -1,0 +1,70 @@
+version: "3.4"
+
+services:
+    db:
+        image: mysql:8.0.33
+        platform: linux/x86_64
+        command: --default-authentication-plugin=mysql_native_password
+        volumes:
+            - "db_app:/var/lib/mysql"
+        environment:
+            MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+            MYSQL_DATABASE: ${MYSQL_DATABASE}
+            MYSQL_USER: ${MYSQL_USER}
+            MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+        ports:
+            - 4306:3306
+        networks:
+            - symfony_app
+    php:
+        build:
+            context: ./docker/php
+            args:
+                TIMEZONE: ${TIMEZONE}
+        depends_on:
+            - db
+        volumes:
+            - ./:/var/www/symfony:cached
+            - ./var:/var/www/symfony/var
+            - ./vendor:/var/www/symfony/vendor
+        healthcheck:
+            interval: 10s
+            timeout: 3s
+            retries: 3
+            start_period: 30s
+        networks:
+            - symfony_app
+
+    nginx:
+        build:
+            context: ./docker/nginx
+        volumes:
+            - ./:/var/www/symfony:cached
+            - ./var:/var/www/symfony/var
+            - ./vendor:/var/www/symfony/vendor
+        ports:
+            - 8080:80
+        networks:
+            - symfony_app
+        env_file:
+            - ./docker/.env.nginx
+
+    varnish:
+        image: varnish:7.3
+        volumes:
+            - ./docker/varnish/conf:/etc/varnish:ro
+        ports:
+            - "80:80"
+        networks:
+            - symfony_app
+
+
+volumes:
+    symfony_app_var:
+    symfony_app_vendor:
+    db_app:
+    cache:
+
+networks:
+    symfony_app:
+
