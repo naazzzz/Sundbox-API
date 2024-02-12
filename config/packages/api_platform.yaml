@@ -106,10 +106,10 @@ api_platform:
         enabled: true
 
         # The OAuth client ID.
-        clientId: ''
+        clientId: '123'
 
         # The OAuth client secret.
-        clientSecret: ''
+        clientSecret: '123'
 
         # The OAuth type.
         type: 'oauth2'

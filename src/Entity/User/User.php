@@ -2,6 +2,7 @@
 
 namespace App\Entity\User;
 
+use ApiPlatform\Metadata\ApiProperty;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
@@ -17,8 +18,10 @@ use App\Entity\Enum\SGroupsEnum;
 use App\Entity\Job\SpareParts;
 use App\State\UserPasswordHasher;
 use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -81,8 +84,11 @@ use Symfony\Component\Validator\Constraints as Assert;
     ]
 )]
 #[ORM\Entity]
-class User extends BaseEntity implements PasswordAuthenticatedUserInterface
+class User extends BaseEntity implements PasswordAuthenticatedUserInterface, UserInterface
 {
+    public const ROLE_DEFAULT = 'ROLE_USER';
+    public const ROLE_ADMIN = 'ROLE_ADMIN';
+
     public function __construct(
         #[ORM\OneToMany(mappedBy: 'user', targetEntity: SpareParts::class, cascade: ['persist','remove'])]
         public iterable $parts = new ArrayCollection()
@@ -127,11 +133,90 @@ class User extends BaseEntity implements PasswordAuthenticatedUserInterface
     )]
     public string $plainPassword;
 
+
+    #[ORM\Column(type: "array")]
+    #[ApiProperty(
+        security: "is_granted('ROLE_ADMIN')",
+        securityPostDenormalize: "is_granted('UPDATE', object)")]
+    public array $roles;
+
     /**
      * @see PasswordAuthenticatedUserInterface
      */
     public function getPassword(): ?string
     {
         return $this->password;
+    }
+
+
+    public function getRoles(): array
+    {
+        $roles = $this->roles;
+
+        foreach ($this->getGroups() as $group) {
+            $roles = array_merge($roles, $group->getRoles());
+        }
+
+        // we need to make sure to have at least one role
+        $roles[] = static::ROLE_DEFAULT;
+
+        return array_values(array_unique($roles));
+    }
+
+    public function setRoles(array $roles): static
+    {
+        $this->roles = [];
+
+        foreach ($roles as $role) {
+            $this->addRole($role);
+        }
+
+        return $this;
+    }
+
+    public function addRole(string $role): static
+    {
+        $role = strtoupper($role);
+        if ($role === static::ROLE_DEFAULT) {
+            return $this;
+        }
+
+        if (!in_array($role, $this->roles, true)) {
+            $this->roles[] = $role;
+        }
+
+        return $this;
+    }
+
+    public function removeRole(string $role): static
+    {
+        if (false !== $key = array_search(strtoupper($role), $this->roles, true)) {
+            unset($this->roles[$key]);
+            $this->roles = array_values($this->roles);
+        }
+
+        return $this;
+    }
+
+    public function hasRole($role = null): bool
+    {
+        if (is_null($role)) {
+            return false;
+        }
+        return in_array(strtoupper($role), $this->getRoles(), true);
+    }
+
+    public function getGroups(): array
+    {
+        return [];
+    }
+    public function eraseCredentials()
+    {
+
+    }
+
+    public function getUserIdentifier(): string
+    {
+       return $this->email;
     }
 }

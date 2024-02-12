@@ -26,3 +26,11 @@ services:
             $processor: '@api_platform.doctrine.orm.state.persist_processor'
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+    App\UserBundle\Listeners\UserResolveListener:
+        arguments:
+            - '@security.user_providers'
+            - '@security.password_hasher'
+        tags:
+            - { name: kernel.event_listener, event: league.oauth2_server.event.user_resolve, method: onUserResolve }
+

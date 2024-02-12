@@ -27,11 +27,6 @@ services:
             - ./:/var/www/symfony:cached
             - ./var:/var/www/symfony/var
             - ./vendor:/var/www/symfony/vendor
-        healthcheck:
-            interval: 10s
-            timeout: 3s
-            retries: 3
-            start_period: 30s
         networks:
             - symfony_app
 

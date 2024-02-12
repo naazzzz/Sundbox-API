@@ -20,8 +20,11 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ApiResource(
     operations: [
-        new Get(),
-        new GetCollection(),
+        new Get(
+            security: "is_granted('legal_entity_read', object)"
+        ),
+        new GetCollection(
+        ),
         new Post(),
         new Patch(),
         new Put(),
@@ -29,6 +32,7 @@ use Symfony\Component\Validator\Constraints as Assert;
     ],
     normalizationContext: ['groups' => [SGroupsEnum::SET_LEGAL_ENTITY->value]],
     denormalizationContext: ['groups' => [SGroupsEnum::SET_LEGAL_ENTITY->value]],
+    security: "is_granted('ROLE_USER')",
     exceptionToStatus: [
         //Можно изменить код ошибки без всяких кастомных контроллеров
         ValidationException::class => 422,
@@ -37,6 +41,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity]
 class LegalEntity extends BaseEntity
 {
+    public const LEGAL_ENTITY_READ = 'legal_entity_read';
+
     public function __construct(
         //Начиная с php 8 такое объявление вроде как хороший тон
         //Такой синтаксис эквивалентен тому, что мы бы полем создали бы эту коллекцию и
@@ -48,8 +54,6 @@ class LegalEntity extends BaseEntity
             SGroupsEnum::GET_LEGAL_ENTITY->value
         ])]
         /**
-         * Понятия не имею давно ли появился именно такой вид для дженериков, но мне нравится
-         * опять же так разработчики ApiPlatform делают
          * @var list<User>
          */
         public iterable $users = new ArrayCollection(),

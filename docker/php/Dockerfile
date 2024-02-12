@@ -25,7 +25,7 @@ RUN pecl install -o -f redis \
 &&  rm -rf /tmp/pear \
 &&  docker-php-ext-enable redis
 
-RUN docker-php-ext-configure gd --with-jpeg --with-freetype 
+RUN docker-php-ext-configure gd --with-jpeg --with-freetype
 
 RUN docker-php-ext-install \
     pdo pdo_mysql zip xsl gd intl opcache exif mbstring

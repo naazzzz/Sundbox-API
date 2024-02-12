@@ -16,7 +16,7 @@ class Job extends BaseEntity
 {
     public function __construct(
         #[ORM\OneToMany(mappedBy: 'job', targetEntity: SpareParts::class, cascade: ['persist','remove'])]
-        public iterable $parts = new ArrayCollection()
+        public iterable $parts = []
     ) {
         parent::__construct();
     }
